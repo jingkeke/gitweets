@@ -1,0 +1,1857 @@
+<!DOCTYPE html><html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗯️</text></svg>">
+	<title>gitweets</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			-webkit-tap-highlight-color: transparent;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+			background-color: #ededed;
+			color: #191919;
+			line-height: 1.4;
+			-webkit-font-smoothing: antialiased;
+		}
+
+		.container {
+			max-width: 414px;
+			margin: 0 auto;
+			background-color: #ededed;
+			min-height: 100vh;
+			position: relative;
+		}
+
+		/* 顶部导航栏 */
+		.nav-bar {
+			position: fixed;
+			top: 0;
+			left: 50%;
+			transform: translateX(-50%);
+			width: 100%;
+			max-width: 414px;
+			height: 55px;
+			z-index: 1000;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 0 16px;
+			transition: background-color 0.3s, color 0.3s;
+			background-color: transparent;
+		}
+
+		.nav-bar.scrolled {
+			background-color: #ededed;
+		}
+
+		.nav-bar .back-btn {
+			position: absolute;
+			left: 12px;
+			width: 24px;
+			height: 24px;
+			cursor: pointer;
+			text-decoration: none;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.nav-bar .back-btn svg {
+			width: 24px;
+			height: 24px;
+			fill: white;
+			transition: fill 0.3s;
+		}
+
+		.nav-bar.scrolled .back-btn svg {
+			fill: #191919;
+		}
+
+		.nav-bar .title {
+			font-size: 16px;
+			font-weight: 500;
+			color: transparent;
+			transition: color 0.3s;
+		}
+
+		.nav-bar.scrolled .title {
+			color: #191919;
+		}
+
+		.nav-bar .post-btn {
+			position: absolute;
+			right: 16px;
+			width: 24px;
+			height: 24px;
+			cursor: pointer;
+			background: none;
+			border: none;
+			padding: 0;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.nav-bar .post-btn svg {
+			width: 24px;
+			height: 24px;
+			fill: white;
+			transition: fill 0.3s;
+		}
+
+		.nav-bar.scrolled .post-btn svg {
+			fill: #191919;
+		}
+
+		/* 封面区域 */
+		.cover-section {
+			position: relative;
+			height: 0;
+			padding-bottom: 75%;
+			overflow: hidden;
+			background-color: #c0c0c0;
+		}
+
+		.cover-image {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+		.cover-overlay {
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			padding: 20px 16px;
+			display: flex;
+			align-items: flex-end;
+			justify-content: flex-end;
+			background: linear-gradient(transparent, rgba(0, 0, 0, 0.3));
+		}
+
+		.cover-user-info {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			text-decoration: none;
+			color: inherit;
+		}
+
+		.cover-username {
+			font-size: 18px;
+			font-weight: 600;
+			color: white;
+			text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+		}
+
+		.cover-avatar {
+			width: 68px;
+			height: 68px;
+			border-radius: 8px;
+			border: 3px solid white;
+			overflow: hidden;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+		}
+
+		.cover-avatar img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+		/* 分页指示器 */
+		.pagination-indicator {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 12px 16px;
+			background-color: white;
+			margin-top: 12px;
+			gap: 16px;
+		}
+
+		.pagination-indicator .page-btn {
+			width: 32px;
+			height: 32px;
+			border: none;
+			background-color: #f5f5f5;
+			border-radius: 4px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 16px;
+			color: #191919;
+		}
+
+		.pagination-indicator .page-btn:disabled {
+			opacity: 0.4;
+			cursor: not-allowed;
+		}
+
+		.pagination-indicator .page-btn:hover:not(:disabled) {
+			background-color: #e5e5e5;
+		}
+
+		.pagination-indicator .page-info {
+			font-size: 14px;
+			color: #666;
+			cursor: pointer;
+		}
+
+		.pagination-indicator .page-info:hover {
+			color: #333;
+		}
+
+		/* 动态列表 */
+		.posts-list {
+			background-color: white;
+			margin-top: 2px;
+			padding-bottom: 80px;
+		}
+
+		.post-item {
+			padding: 12px 16px;
+			border-bottom: 1px solid #e5e5e5;
+		}
+
+		.post-item:last-child {
+			border-bottom: none;
+		}
+
+		.post-header {
+			display: flex;
+			align-items: flex-start;
+			margin-bottom: 10px;
+		}
+
+		.post-avatar {
+			width: 44px;
+			height: 44px;
+			border-radius: 4px;
+			overflow: hidden;
+			margin-right: 12px;
+			flex-shrink: 0;
+		}
+
+		.post-avatar img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+		.post-meta {
+			flex: 1;
+			min-width: 0;
+		}
+
+		.post-username {
+			font-size: 16px;
+			font-weight: 600;
+			color: #174b73;
+			margin-bottom: 2px;
+			word-break: break-word;
+		}
+
+		.post-content {
+			font-size: 16px;
+			line-height: 1.5;
+			color: #191919;
+			margin-bottom: 10px;
+			word-break: break-word;
+			white-space: pre-wrap;
+		}
+
+		.post-fold {
+			display: inline;
+		}
+
+		.post-fold summary {
+			display: inline;
+			color: #174b73;
+			cursor: pointer;
+		}
+
+		.post-fold summary::marker {
+			content: '';
+		}
+
+		.post-fold[open] summary {
+			display: none;
+		}
+
+		.post-location {
+			display: inline-flex;
+			align-items: center;
+			font-size: 13px;
+			color: #576b95;
+			margin-bottom: 4px;
+		}
+
+		.post-location svg {
+			width: 14px;
+			height: 14px;
+			margin-right: 4px;
+			fill: #576b95;
+		}
+
+		/* 图片网格 */
+		.post-images {
+			margin-bottom: 10px;
+		}
+
+		.image-grid {
+			display: grid;
+			gap: 4px;
+		}
+
+		.image-grid-1 {
+			grid-template-columns: 1fr;
+			max-width: 70%;
+		}
+
+		.image-grid-2 {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.image-grid-3 {
+			grid-template-columns: repeat(3, 1fr);
+		}
+
+		.image-grid-4 {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.image-grid-5,
+		.image-grid-6 {
+			grid-template-columns: repeat(3, 1fr);
+		}
+
+		.image-grid-7,
+		.image-grid-8,
+		.image-grid-9 {
+			grid-template-columns: repeat(3, 1fr);
+		}
+
+		.image-item {
+			aspect-ratio: 1;
+			overflow: hidden;
+			background-color: #f5f5f5;
+			cursor: pointer;
+		}
+
+		.image-item img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			transition: transform 0.2s;
+		}
+
+		.image-item:active img {
+			transform: scale(0.98);
+		}
+
+		/* 操作栏 */
+		.post-actions {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-top: 0px;
+			padding-top: 0px;
+		}
+
+		.post-time {
+			font-size: 13px;
+			color: #999;
+			text-decoration: none;
+		}
+
+		.post-time:hover {
+			color: #666;
+		}
+
+		.action-menu-btn {
+			width: 28px;
+			height: 28px;
+			background-color: #f5f5f5;
+			border: none;
+			border-radius: 4px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			position: relative;
+		}
+
+		.action-menu-btn svg {
+			width: 18px;
+			height: 18px;
+			fill: #191919;
+		}
+
+		/* 弹出菜单 */
+		.action-popup {
+			position: absolute;
+			right: 0;
+			top: 100%;
+			background-color: #4c4c4c;
+			border-radius: 4px;
+			display: none;
+			z-index: 100;
+			min-width: 160px;
+			box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+		}
+
+		.action-popup.show {
+			display: flex;
+		}
+
+		.action-popup::after {
+			content: "";
+			position: absolute;
+			top: -6px;
+			right: 10px;
+			width: 0;
+			height: 0;
+			border-left: 6px solid transparent;
+			border-right: 6px solid transparent;
+			border-bottom: 6px solid #4c4c4c;
+		}
+
+		.popup-item {
+			flex: 1;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			padding: 12px 16px;
+			color: white;
+			font-size: 14px;
+			cursor: pointer;
+			white-space: nowrap;
+			border-right: 1px solid rgba(255, 255, 255, 0.1);
+		}
+
+		.popup-item:last-child {
+			border-right: none;
+		}
+
+		.popup-item svg {
+			width: 20px;
+			height: 20px;
+			fill: white;
+		}
+
+		.popup-item:active {
+			background-color: rgba(255, 255, 255, 0.1);
+		}
+
+		/* 评论区 */
+		.like-comment-section {
+			margin-top: 10px;
+			background-color: #f5f5f5;
+			border-radius: 4px;
+			overflow: hidden;
+		}
+
+		.comments-section {
+			padding: 0;
+		}
+
+		.comment-item {
+			padding: 8px 12px;
+			font-size: 14px;
+			line-height: 1.4;
+			border-bottom: 1px solid #e5e5e5;
+		}
+
+		.comment-item:last-child {
+			border-bottom: none;
+		}
+
+		.comment-author {
+			color: #174b73;
+			font-weight: 500;
+			margin-right: 4px;
+		}
+
+		.comment-text {
+			color: #191919;
+		}
+
+		.comment-time {
+			color: #999;
+			font-size: 12px;
+			margin-left: 6px;
+		}
+
+		.comment-form {
+			border-top: 1px solid #e5e5e5;
+			padding: 8px 12px;
+		}
+
+		.comment-form-row {
+			display: flex;
+			gap: 6px;
+			margin-bottom: 6px;
+		}
+
+		.comment-form-row:last-child {
+			margin-bottom: 0;
+		}
+
+		.comment-name,
+		.comment-link,
+		.comment-email,
+		.comment-textarea {
+			flex: 1;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			padding: 6px 8px;
+			font-size: 13px;
+			outline: none;
+			font-family: inherit;
+			resize: none;
+		}
+
+		.comment-name:focus,
+		.comment-link:focus,
+		.comment-email:focus,
+		.comment-textarea:focus {
+			border-color: #174b73;
+		}
+
+		.comment-textarea {
+			min-height: 40px;
+		}
+
+		.comment-form-actions {
+			justify-content: flex-end;
+		}
+
+		.comment-submit {
+			background: #174b73;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			padding: 6px 14px;
+			font-size: 14px;
+			cursor: pointer;
+			white-space: nowrap;
+		}
+
+		.comment-submit:active {
+			background: #0d3552;
+		}
+
+		.comment-submit:disabled {
+			opacity: 0.6;
+			cursor: not-allowed;
+		}
+
+		/* 图片预览 */
+		.image-preview-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background-color: rgba(0, 0, 0, 0.95);
+			z-index: 2000;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+		}
+
+		.image-preview-overlay.show {
+			display: flex;
+		}
+
+		.image-preview-overlay img {
+			max-width: 95%;
+			max-height: 90vh;
+			object-fit: contain;
+		}
+
+		/* 加载状态 */
+		.loading-state {
+			padding: 60px 20px;
+			text-align: center;
+			color: #999;
+		}
+
+		.loading-spinner {
+			width: 32px;
+			height: 32px;
+			border: 3px solid #e5e5e5;
+			border-top-color: #174b73;
+			border-radius: 50%;
+			animation: spin 0.8s linear infinite;
+			margin: 0 auto 16px;
+		}
+
+		@keyframes spin {
+			to { transform: rotate(360deg); }
+		}
+
+		/* 遮罩层 */
+		.overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			z-index: 50;
+			display: none;
+		}
+
+		.overlay.show {
+			display: block;
+		}
+
+		/* Modal */
+		.modal {
+			display: none;
+			position: fixed;
+			z-index: 3000;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0,0,0,0.4);
+		}
+
+		.modal-content {
+			background-color: #fff;
+			margin: 10% auto;
+			padding: 1rem;
+			border: 1px solid #888;
+			width: 90%;
+			max-width: 40em;
+			max-height: 80vh;
+			border-radius: 8px;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.modal-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 1rem;
+		}
+
+		.modal-header h2 {
+			margin: 0;
+			color: #174b73;
+		}
+
+		.modal-header .close-btn {
+			font-size: 1.5rem;
+			cursor: pointer;
+			color: #999;
+		}
+
+		.modal-body {
+			flex: 1;
+			overflow-y: auto;
+			min-height: 0;
+		}
+
+		.modal-body textarea {
+			width: 100%;
+			height: 200px;
+			padding: 0.5rem;
+			margin-bottom: 1rem;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+			resize: vertical;
+			box-sizing: border-box;
+			font-family: inherit;
+			font-size: 14px;
+		}
+
+		.modal-footer {
+			display: flex;
+			justify-content: flex-end;
+			gap: 0.5rem;
+		}
+
+		.modal-footer button {
+			padding: 0.5rem 1rem;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			background-color: #ccc;
+			color: #333;
+			font-size: 14px;
+		}
+
+		.modal-footer .btn-post {
+			background-color: #174b73;
+			color: white;
+		}
+
+		/* 图片预览网格（发帖前） */
+		.image-preview-grid {
+			display: grid;
+			gap: 6px;
+			margin-bottom: 8px;
+		}
+
+		.image-preview-grid:empty {
+			display: none;
+		}
+
+		.image-preview-grid.cols-1 { grid-template-columns: repeat(3, 1fr); max-width: 60%; }
+		.image-preview-grid.cols-2 { grid-template-columns: repeat(3, 1fr); }
+		.image-preview-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+		.image-preview-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+		.image-preview-grid.cols-6 { grid-template-columns: repeat(4, 1fr); }
+		.image-preview-grid.cols-9 { grid-template-columns: repeat(4, 1fr); }
+
+		.add-image-btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 48px;
+			height: 48px;
+			border: 1px dashed #ccc;
+			border-radius: 4px;
+			cursor: pointer;
+			color: #999;
+			margin-bottom: 8px;
+		}
+
+		.add-image-btn:hover {
+			border-color: #174b73;
+			color: #174b73;
+		}
+
+		.preview-item {
+			position: relative;
+			aspect-ratio: 1;
+			overflow: hidden;
+			border-radius: 4px;
+			background-color: #f5f5f5;
+			min-height: 0;
+		}
+
+		.preview-item img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+		.preview-item .remove-btn {
+			position: absolute;
+			top: 4px;
+			right: 4px;
+			width: 20px;
+			height: 20px;
+			background-color: rgba(0,0,0,0.5);
+			border: none;
+			border-radius: 50%;
+			color: white;
+			font-size: 14px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.image-count {
+			font-size: 12px;
+			color: #999;
+			margin-bottom: 8px;
+		}
+
+		.image-count:empty {
+			display: none;
+		}
+
+		/* 底部安全区 */
+		.safe-area-bottom {
+			height: env(safe-area-inset-bottom, 20px);
+		}
+
+		@media (max-width: 414px) {
+			.container {
+				max-width: 100%;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<!-- 顶部导航栏 -->
+		<div class="nav-bar" id="navBar">
+			<a class="back-btn" href="/">
+				<svg viewBox="0 0 24 24">
+					<path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+				</svg>
+			</a>
+			<span class="title" id="navTitle">gitweets</span>
+			<button class="post-btn" onclick="openModal()">
+				<svg viewBox="0 0 24 24">
+					<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+				</svg>
+			</button>
+		</div>
+
+		<!-- 封面区域 -->
+		<div class="cover-section">
+			<img class="cover-image" src="https://picsum.photos/id/1018/800/600" alt="封面">
+			<div class="cover-overlay">
+				<a href="/" class="cover-user-info">
+					<span class="cover-username" id="coverUsername">Loading...</span>
+					<div class="cover-avatar">
+						<img id="coverAvatar" src="" alt="头像">
+					</div>
+				</a>
+			</div>
+		</div>
+
+		<!-- 动态列表 -->
+		<div class="posts-list" id="postsList">
+			<div class="loading-state" id="loadingState">
+				<div class="loading-spinner"></div>
+				<div>正在加载...</div>
+			</div>
+		</div>
+
+		<!-- 分页指示器 -->
+		<div class="pagination-indicator" id="paginationIndicator" style="display:none;">
+			<button class="page-btn" id="btnPrev" disabled onclick="goPrevPage()">◀</button>
+			<span class="page-info" id="pageInfo" onclick="refreshCurrentPage()">-</span>
+			<button class="page-btn" id="btnNext" disabled onclick="goNextPage()">▶</button>
+		</div>
+
+		<!-- 图片预览 -->
+		<div class="image-preview-overlay" id="imagePreview">
+			<img src="" alt="预览图片" id="previewImage">
+		</div>
+
+		<!-- 遮罩层 -->
+		<div class="overlay" id="overlay"></div>
+
+		<div class="safe-area-bottom"></div>
+	</div>
+
+	<!-- Modal for composing tweet -->
+	<div id="composeModal" class="modal">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2>发推</h2>
+				<span class="close-btn" onclick="closeModal()">&times;</span>
+			</div>
+			<div class="modal-body">
+				<div class="image-preview-grid" id="imagePreviewGrid">
+					<!-- 图片预览和 + 按钮将在这里动态添加 -->
+				</div>
+				<div class="image-count" id="imageCount"></div>
+				<textarea id="inputTweet" placeholder="内容以 : 结尾可显示图片"></textarea>
+			</div>
+			<div class="modal-footer">
+				<button onclick="closeModal()">取消</button>
+				<button class="btn-post" id="btnPost">发送</button>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// safe html
+		const sh = s => s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+		const linkify = s => s.replace(/(https?:\/\/[^\s<>"']+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+
+		// 长文折叠：>250 字节在最近换行处截断
+		const foldPost = (s, limit = 250) => {
+			if (new TextEncoder().encode(s).length <= limit) return linkify(sh(s));
+			const cut = s.lastIndexOf('\n', limit);
+			const head = s.slice(0, cut > 0 ? cut : limit);
+			const tail = s.slice(cut > 0 ? cut + 1 : limit);
+			return `${linkify(sh(head))} <details class="post-fold"><summary>...</summary>${linkify(sh(tail))}</details>`;
+		}
+
+		// show date
+		const sd = d => new Date(d.getTime() - d.getTimezoneOffset()*60_000).toISOString().replace('T', ' ').split('.')[0]
+
+		// format relative time
+		function timeAgo(date) {
+			const now = new Date();
+			const diff = now - date;
+			const minutes = Math.floor(diff / 60000);
+			const hours = Math.floor(diff / 3600000);
+			const days = Math.floor(diff / 86400000);
+
+			if (minutes < 1) return '刚刚';
+			if (minutes < 60) return minutes + '分钟前';
+			if (hours < 24) return hours + '小时前';
+			if (days < 7) return days + '天前';
+			if (days < 30) return Math.floor(days / 7) + '周前';
+			if (days < 365) return Math.floor(days / 30) + '个月前';
+			return Math.floor(days / 365) + '年前';
+		}
+
+		// format date for display
+		function formatDate(date) {
+			const y = date.getFullYear();
+			const m = String(date.getMonth() + 1).padStart(2, '0');
+			const d = String(date.getDate()).padStart(2, '0');
+			return `${y}-${m}-${d}`;
+		}
+
+		// check if two dates are the same day
+		function isSameDay(d1, d2) {
+			return d1.getFullYear() === d2.getFullYear() &&
+				d1.getMonth() === d2.getMonth() &&
+				d1.getDate() === d2.getDate();
+		}
+
+		// Global state
+		let REPO = '';
+		let API_BASE = '';
+		let currentPage = 0; // 0 = first page
+		let loadedBuffer = []; // commits loaded from API but not yet displayed
+		let displayedPages = []; // array of {commits: [], startDate, endDate}
+		let isLoading = false;
+		let repoOwnerInfo = null;
+
+		// Load repo owner info for cover
+		async function loadOwnerInfo() {
+			try {
+				const resp = await fetch(API_BASE);
+				const data = await resp.json();
+				repoOwnerInfo = data.owner;
+				document.getElementById('coverUsername').textContent = repoOwnerInfo.login;
+				document.getElementById('coverAvatar').src = repoOwnerInfo.avatar_url;
+				document.getElementById('navTitle').textContent = REPO.split('/')[1] || 'gitweets';
+			} catch (e) {
+				console.error('Failed to load owner info:', e);
+				document.getElementById('coverUsername').textContent = REPO;
+			}
+		}
+
+		// Parse URL to get repo info
+		function parseUrl() {
+			// Try to get from path first
+			const m = /^\/(\w+)(?:\/([0-9a-fA-F]{7,40}))?$/.exec(location.pathname);
+			if (m) {
+				// This is a user/commit view, use default repo
+				REPO = 'jingkeke/gitweets';
+			} else {
+				// Check URL params
+				const urlParams = new URLSearchParams(window.location.search);
+				const repo = urlParams.get('repo');
+				if (repo) {
+					REPO = repo;
+				} else {
+					REPO = 'jingkeke/gitweets';
+				}
+			}
+			API_BASE = `https://api.github.com/repos/${REPO}`;
+		}
+
+		// Fetch commits from API
+		async function fetchCommits(untilDate) {
+			const params = { per_page: 100 };
+			if (untilDate) {
+				params.until = untilDate.toISOString();
+			}
+
+			const m = /^\/(\w+)(?:\/([0-9a-fA-F]{7,40}))?$/.exec(location.pathname);
+			if (m && m[2]) {
+				// Single commit view
+				const data = await (await fetch(`${API_BASE}/commits/${m[2]}`)).json();
+				return [data];
+			}
+			if (m && m[1]) {
+				params.author = m[1];
+			}
+
+			const resp = await fetch(`${API_BASE}/commits?${new URLSearchParams(params).toString()}`);
+			return await resp.json();
+		}
+
+// Find date boundary in commits array
+		// Requires at least 20 items, then finds the first date change
+		function findDateBoundary(commits) {
+			if (commits.length <= 1) return commits.length;
+
+			const firstDate = new Date(commits[0].commit.author.date);
+			for (let i = 1; i < commits.length; i++) {
+				const currDate = new Date(commits[i].commit.author.date);
+				if (!isSameDay(firstDate, currDate) && i >= 20) {
+					return i;
+				}
+			}
+			return commits.length;
+		}
+
+		// Load a page of commits
+		async function loadPage(pageIndex) {
+			if (isLoading) return;
+			isLoading = true;
+
+			const postsList = document.getElementById('postsList');
+			const loadingState = document.getElementById('loadingState');
+			loadingState.style.display = 'block';
+			postsList.querySelectorAll(':scope .post-item').forEach(el => el.remove());
+
+			try {
+				// Going backward - use cached pages
+				if (pageIndex < displayedPages.length && pageIndex >= 0) {
+					const page = displayedPages[pageIndex];
+					await renderPage(page.commits);
+					updatePagination(pageIndex);
+					loadingState.style.display = 'none';
+					return;
+				}
+
+				// Going forward - need to load new data
+				if (pageIndex === 0 && displayedPages.length === 0) {
+					// First load
+					const commits = await fetchCommits(null);
+					if (!commits || commits.length === 0) {
+						loadingState.innerHTML = '<div>没有数据</div>';
+						return;
+					}
+					await processAndDisplay(commits, pageIndex);
+				} else if (pageIndex === displayedPages.length) {
+					// Next page - load from buffer or fetch
+					if (loadedBuffer.length === 0) {
+						// Need to fetch more
+						const lastPage = displayedPages[displayedPages.length - 1];
+						const lastCommit = lastPage.commits[lastPage.commits.length - 1];
+						const untilDate = new Date(lastCommit.commit.author.date);
+						// Set to start of that day to include all commits from that day
+						untilDate.setHours(0, 0, 0, 0);
+
+						const commits = await fetchCommits(untilDate);
+						if (!commits || commits.length === 0) {
+							loadingState.innerHTML = '<div>没有更多数据了</div>';
+							return;
+						}
+						// Filter out already displayed commits
+						const lastDisplayedSha = lastCommit.sha;
+						const lastIdx = commits.findIndex(c => c.sha === lastDisplayedSha);
+						if (lastIdx >= 0) {
+							loadedBuffer = commits.slice(lastIdx + 1);
+						} else {
+							loadedBuffer = commits;
+						}
+					}
+
+					if (loadedBuffer.length === 0) {
+						loadingState.innerHTML = '<div>没有更多数据了</div>';
+						return;
+					}
+
+					await processAndDisplay(loadedBuffer, pageIndex);
+				}
+
+				loadingState.style.display = 'none';
+			} catch (e) {
+				console.error('Failed to load page:', e);
+				loadingState.innerHTML = '<div>加载失败，请重试</div>';
+			} finally {
+				isLoading = false;
+			}
+		}
+
+		// Process buffer and display a page
+		async function processAndDisplay(commits, pageIndex) {
+			const boundary = findDateBoundary(commits);
+			const pageCommits = commits.slice(0, boundary);
+			loadedBuffer = commits.slice(boundary);
+
+			displayedPages.push({
+				commits: pageCommits,
+				startDate: new Date(pageCommits[pageCommits.length - 1].commit.author.date),
+				endDate: new Date(pageCommits[0].commit.author.date)
+			});
+
+			await renderPage(pageCommits);
+			updatePagination(pageIndex);
+		}
+
+		// Render a page of commits
+		async function renderPage(commits) {
+			const postsList = document.getElementById('postsList');
+
+			// First, render all posts without images
+			const mediaIds = [];
+			commits.forEach(item => {
+				postsList.insertAdjacentHTML('beforeend', renderPost(item));
+				// Check if message ends with : (indicator for images)
+				if (!item.files && /(：|:)\s*$/.test(item.commit.message.trim())) {
+					mediaIds.push(item.sha);
+				}
+			});
+
+			// Load images for posts that need them
+			mediaIds.forEach(async function(id) {
+				try {
+					const resp = await fetch(`${API_BASE}/commits/${id}`);
+					const data = await resp.json();
+					appendImages(id, data.files);
+				} catch (e) {
+					console.error('Failed to load images for commit', id, e);
+				}
+			});
+
+			// Load interactions (comments) for all commits
+			const shas = commits.map(c => c.sha);
+			loadInteractions(shas);
+		}
+
+		// Format unix timestamp
+		function formatTime(ts) {
+			if (!ts) return '';
+			const d = new Date(ts * 1000);
+			const now = new Date();
+			const diff = now - d;
+			if (diff < 60000) return '刚刚';
+			if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+			if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+			if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
+			return `${d.getMonth() + 1}月${d.getDate()}日`;
+		}
+
+		// 解析 NDJSON → { comments: [...] }
+		function parseNote(ndjson) {
+			const comments = [];
+			if (!ndjson) return { comments };
+			for (const line of ndjson.split('\n')) {
+				if (!line.trim()) continue;
+				try {
+					const e = JSON.parse(line);
+					if (e.type === 'comment') comments.push(e);
+					else if (e.type === 'delete_comment') {
+						const idx = comments.findIndex(c => c.id === e.target);
+						if (idx >= 0) comments.splice(idx, 1);
+					}
+				} catch {}
+			}
+			return { comments };
+		}
+
+		// GraphQL fallback 查询
+		const NOTES_GQL = 'query($o:String!,$r:String!){repository(owner:$o,name:$r){ref(qualifiedName:"refs/notes/commits"){target{...on Commit{tree{entries{name object{...on Blob{text}}}}}}}}}';
+
+		// 批量加载评论
+		async function loadInteractions(commitShas) {
+			if (!commitShas.length) return;
+
+			// 1. 先试 CF Worker
+			try {
+				const resp = await fetch(`/.cmts?repo=${encodeURIComponent(REPO)}&shas=${commitShas.join(',')}`);
+				if (resp.ok) {
+					const data = await resp.json();
+					for (const [sha, d] of Object.entries(data)) {
+						if (d.comments?.length) renderInteractionComments(sha, d.comments);
+					}
+					return;
+				}
+			} catch {}
+		}
+
+		// 渲染评论列表
+		function renderInteractionComments(sha, comments) {
+			const postEl = document.getElementById(`post-${sha}`);
+			if (!postEl) return;
+			const section = postEl.querySelector('.like-comment-section');
+			const commentsSection = section.querySelector('.comments-section');
+			commentsSection.innerHTML = comments.map(c => renderCommentItem(c)).join('');
+			commentsSection.style.display = 'block';
+			section.style.display = 'block';
+		}
+
+		// Append images to a post
+		function appendImages(sha, files) {
+			if (!files) return;
+
+			const images = [];
+			files.forEach(f => {
+				const m = /\/static%2F(.+\.(webp|jpg|jpeg|png|gif|jxl|avif))$/i.exec(f.raw_url || f.filename || '');
+				if (m) {
+					images.push(`https://raw.githubusercontent.com/${REPO}/${sha}/static/${decodeURIComponent(m[1])}`);
+				}
+			});
+
+			if (images.length === 0) return;
+
+			const postEl = document.getElementById(`post-${sha}`);
+			if (!postEl) return;
+
+			const count = Math.min(images.length, 9);
+			const gridClass = `image-grid-${count}`;
+			let gridItems = '';
+			for (let i = 0; i < count; i++) {
+				gridItems += `
+					<div class="image-item" data-src="${images[i]}">
+						<img src="${images[i]}" alt="图片" loading="lazy">
+					</div>
+				`;
+			}
+
+			const imagesHtml = `<div class="post-images"><div class="image-grid ${gridClass}">${gridItems}</div></div>`;
+
+			// Insert after content, before location
+			const contentEl = postEl.querySelector('.post-content');
+			if (contentEl) {
+				contentEl.insertAdjacentHTML('afterend', imagesHtml);
+			}
+		}
+
+		// Update pagination controls
+		function updatePagination(pageIndex) {
+			currentPage = pageIndex;
+			const indicator = document.getElementById('paginationIndicator');
+			const pageInfo = document.getElementById('pageInfo');
+			const btnPrev = document.getElementById('btnPrev');
+			const btnNext = document.getElementById('btnNext');
+
+			indicator.style.display = 'flex';
+
+			if (displayedPages[pageIndex]) {
+				const page = displayedPages[pageIndex];
+				const start = formatDate(page.startDate);
+				const end = formatDate(page.endDate);
+				pageInfo.textContent = start === end ? start : `${start} ~ ${end}`;
+			}
+
+			btnPrev.disabled = pageIndex === 0;
+			// Always allow next - will show "no more data" if needed
+			btnNext.disabled = false;
+		}
+
+		// Render a single post
+		function renderPost(item) {
+			const authorName = item.commit.author.name;
+			const authorAvatar = item.author?.avatar_url || '';
+			const authorSlug = item.author?.login || '';
+			const message = item.commit.message;
+			const date = new Date(item.commit.author.date);
+			const isVerified = item.commit.verification?.verified;
+
+			// Location stub (for future use)
+			const locationHtml = ''; // placeholder for future
+
+			// 评论区
+			const commentHtml = `
+				<div class="like-comment-section">
+					<div class="comments-section" style="display:none;"></div>
+				</div>
+			`;
+
+			return `
+				<div class="post-item" id="post-${item.sha}" data-sha="${item.sha}">
+					<div class="post-header">
+						<div class="post-avatar">
+							<a href="/">
+								<img src="${encodeURI(authorAvatar)}" alt="头像">
+							</a>
+						</div>
+						<div class="post-meta">
+							<div class="post-username">
+								<a href="/${encodeURI(authorSlug)}" style="color: inherit; text-decoration: none;">${sh(authorName)}</a>
+								${isVerified ? ' <span style="color:blue;">✓</span>' : ''}
+							</div>
+						</div>
+					</div>
+					<div class="post-content">${foldPost(message)}</div>
+					${locationHtml}
+					<div class="post-actions">
+						<a href="/${encodeURI(authorSlug)}/${item.sha.slice(0,7)}" class="post-time" title="${new Intl.DateTimeFormat('zh-CN', {dateStyle: 'long', timeStyle: 'medium'}).format(date)}">${timeAgo(date)}</a>
+						<button class="action-menu-btn" onclick="toggleMenu(this)">
+							<svg viewBox="0 0 24 24">
+								<circle cx="12" cy="6" r="2"/>
+								<circle cx="12" cy="12" r="2"/>
+								<circle cx="12" cy="18" r="2"/>
+							</svg>
+							<div class="action-popup">
+								<div class="popup-item" onclick="handleComment(event, '${item.sha}')">
+									<svg viewBox="0 0 24 24"><path d="M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z"/></svg>
+									<span>评论</span>
+								</div>
+							</div>
+						</button>
+					</div>
+					${commentHtml}
+				</div>
+			`;
+		}
+
+		// Toggle menu
+		window.toggleMenu = function(btn) {
+			const popup = btn.querySelector('.action-popup');
+			const isOpen = popup.classList.contains('show');
+
+			// Close all menus
+			document.querySelectorAll('.action-popup').forEach(p => p.classList.remove('show'));
+			overlay.classList.remove('show');
+
+			if (!isOpen) {
+				popup.classList.add('show');
+				overlay.classList.add('show');
+			}
+		};
+
+		// Handle comment
+		window.handleComment = function(event, sha) {
+			event.stopPropagation();
+			// Close menu
+			document.querySelectorAll('.action-popup').forEach(p => p.classList.remove('show'));
+			overlay.classList.remove('show');
+
+			const postEl = document.getElementById(`post-${sha}`);
+			if (!postEl) return;
+			const section = postEl.querySelector('.like-comment-section');
+			const commentsSection = section.querySelector('.comments-section');
+			section.style.display = 'block';
+			commentsSection.style.display = 'block';
+
+			// 如果已有表单则聚焦
+			if (commentsSection.querySelector('.comment-form')) {
+				commentsSection.querySelector('.comment-name').focus();
+				return;
+			}
+
+			// 读取本地存储的名字
+			const savedName = localStorage.getItem('cmt_name') || '';
+			const savedLink = localStorage.getItem('cmt_link') || '';
+			const savedEmail = localStorage.getItem('cmt_email') || '';
+
+			const formHtml = `
+				<div class="comment-form">
+					<div class="comment-form-row">
+						<input class="comment-name" placeholder="名字 *" maxlength="50" value="${sh(savedName)}">
+						<input class="comment-link" placeholder="链接 (可选)" maxlength="200" value="${sh(savedLink)}">
+					</div>
+					<div class="comment-form-row">
+						<input class="comment-email" placeholder="邮箱 (可选)" maxlength="100" value="${sh(savedEmail)}">
+					</div>
+					<div class="comment-form-row">
+						<textarea class="comment-textarea" placeholder="写评论..." maxlength="500" rows="2"></textarea>
+					</div>
+					<div class="comment-form-row comment-form-actions">
+						<button class="comment-submit" onclick="submitComment('${sha}')">发送</button>
+					</div>
+				</div>
+			`;
+			commentsSection.insertAdjacentHTML('beforeend', formHtml);
+			commentsSection.querySelector('.comment-name').focus();
+		};
+
+		// Submit comment
+		window.submitComment = async function(sha) {
+			const postEl = document.getElementById(`post-${sha}`);
+			if (!postEl) return;
+			const form = postEl.querySelector('.comment-form');
+			if (!form) return;
+
+			const name = form.querySelector('.comment-name').value.trim();
+			const text = form.querySelector('.comment-textarea').value.trim();
+			const link = form.querySelector('.comment-link').value.trim();
+			const email = form.querySelector('.comment-email').value.trim();
+
+			if (!name) { alert('请填写名字'); form.querySelector('.comment-name').focus(); return; }
+			if (!text) { alert('请填写评论内容'); form.querySelector('.comment-textarea').focus(); return; }
+
+			// 保存到本地
+			localStorage.setItem('cmt_name', name);
+			if (link) localStorage.setItem('cmt_link', link);
+			if (email) localStorage.setItem('cmt_email', email);
+
+			const btn = form.querySelector('.comment-submit');
+			btn.disabled = true;
+			btn.textContent = '发送中...';
+
+			try {
+				const resp = await fetch(`/.cmts?id=${sha}`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ name, text, link, email }),
+				});
+				const data = await resp.json();
+				if (resp.ok && data.success) {
+					// 追加评论到列表
+					const commentsSection = postEl.querySelector('.comments-section');
+					const commentHtml = renderCommentItem(data.comment);
+					form.insertAdjacentHTML('beforebegin', commentHtml);
+					// 清空内容，保留名字等
+					form.querySelector('.comment-textarea').value = '';
+					btn.disabled = false;
+					btn.textContent = '发送';
+				} else {
+					alert(data.error || '评论失败');
+					btn.disabled = false;
+					btn.textContent = '发送';
+				}
+			} catch (e) {
+				alert('网络错误');
+				btn.disabled = false;
+				btn.textContent = '发送';
+			}
+		};
+
+		// Render a single comment item
+		function renderCommentItem(c) {
+			const nameHtml = c.link
+				? `<a class="comment-author" href="${sh(c.link)}" target="_blank" rel="noopener nofollow ugc">${sh(c.name)}</a>`
+				: `<span class="comment-author">${sh(c.name)}</span>`;
+			return `
+				<div class="comment-item">
+					${nameHtml}
+					<span class="comment-text">${sh(c.text)}</span>
+					<span class="comment-time">${formatTime(c.ts)}</span>
+				</div>
+			`;
+		}
+
+		// Click overlay to close menu
+		overlay.addEventListener('click', function() {
+			document.querySelectorAll('.action-popup').forEach(p => p.classList.remove('show'));
+			overlay.classList.remove('show');
+		});
+
+		// Image preview
+		document.addEventListener('click', function(e) {
+			const imageItem = e.target.closest('.image-item');
+			if (imageItem) {
+				const src = imageItem.dataset.src;
+				previewImage.src = src;
+				imagePreview.classList.add('show');
+			}
+
+			if (e.target === imagePreview) {
+				imagePreview.classList.remove('show');
+			}
+		});
+
+		// Pagination
+		window.goPrevPage = function() {
+			if (currentPage > 0) {
+				loadPage(currentPage - 1);
+				window.scrollTo(0, 0);
+			}
+		};
+
+		window.goNextPage = function() {
+			loadPage(currentPage + 1);
+			window.scrollTo(0, 0);
+		};
+
+		window.refreshCurrentPage = function() {
+			loadPage(currentPage);
+			window.scrollTo(0, 0);
+		};
+
+		// Scroll listener for nav bar
+		window.addEventListener('scroll', function() {
+			if (window.scrollY > 200) {
+				navBar.classList.add('scrolled');
+			} else {
+				navBar.classList.remove('scrolled');
+			}
+		});
+
+		// Modal functionality
+		function getOAuthUrl() {
+			const state = crypto.randomUUID();
+			document.cookie = `oauth_state=${state}; Path=/; Secure; SameSite=Strict; Max-Age=600`;
+			return `https://github.com/login/oauth/authorize?scope=public_repo&client_id=Ov23liZGoma1jZkHu640&state=${state}`;
+		}
+
+		function getCookie(cookie_str, name) {
+			return decodeURIComponent(cookie_str || '')
+				.split(";")
+				.find(row => row.trim().startsWith(name + "="))
+				?.split("=")[1]?.trim() || '';
+		}
+
+		function openModal() {
+			if (getCookie(document.cookie, 'logged_in')) {
+				btnPost.innerText = '发送';
+				inputTweet.disabled = false;
+				inputTweet.placeholder = "内容以 : 结尾可显示图片";
+				updateImagePreview();
+			} else {
+				inputTweet.value = '';
+				inputTweet.placeholder = `Login and make a tweet via Github REST API.
+
+Or you can post a tweet locally, clone the repo and
+git commit --allow-empty && git push
+
+This OAuth login will save an access_token into your browser cookie
+The default and minimal required scope is public_repo
+`;
+				inputTweet.disabled = true;
+				btnPost.innerText = 'Login';
+			}
+			composeModal.style.display = 'block';
+		}
+
+		function closeModal() {
+			inputTweet.value = '';
+			inputTweet.placeholder = "What's up?";
+			composeModal.style.display = 'none';
+			// 清理图片选择状态
+			selectedImages.forEach(img => URL.revokeObjectURL(img.url));
+			selectedImages = [];
+			updateImagePreview();
+		}
+
+		// 图片选择功能
+		let selectedImages = []; // 存储 {file, url, filename} 对
+		const MAX_IMAGES = 9;
+		const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+		const imagePreviewGrid = document.getElementById('imagePreviewGrid');
+		const imageCount = document.getElementById('imageCount');
+		const fileInput = document.createElement('input');
+		fileInput.type = 'file';
+		fileInput.accept = 'image/*';
+		fileInput.multiple = true;
+		fileInput.style.display = 'none';
+		document.body.appendChild(fileInput);
+
+		// 生成文件名：MMDD-{seq}.{ext}
+		function generateFilename(file) {
+			const now = new Date();
+			const month = String(now.getMonth() + 1).padStart(2, '0');
+			const day = String(now.getDate()).padStart(2, '0');
+			const seq = String(selectedImages.length + 1).padStart(3, '0');
+			const ext = file.name.split('.').pop() || 'jpg';
+			return `${month}${day}-${seq}.${ext}`;
+		}
+
+		// 文件选择处理
+		fileInput.addEventListener('change', function(e) {
+			const files = Array.from(e.target.files);
+			if (!files.length) return;
+
+			const remaining = MAX_IMAGES - selectedImages.length;
+			if (remaining <= 0) {
+				alert(`最多选择 ${MAX_IMAGES} 张图片`);
+				fileInput.value = '';
+				return;
+			}
+
+			let added = 0;
+			files.forEach(file => {
+				if (added >= remaining) return;
+
+				// 验证文件类型
+				if (!file.type.startsWith('image/')) {
+					alert(`${file.name} 不是图片文件`);
+					return;
+				}
+
+				// 验证文件大小
+				if (file.size > MAX_FILE_SIZE) {
+					alert(`${file.name} 超过 5MB 限制`);
+					return;
+				}
+
+				const url = URL.createObjectURL(file);
+				const filename = generateFilename(file);
+				selectedImages.push({ file, url, filename });
+				added++;
+			});
+
+			if (files.length > remaining) {
+				alert(`已达上限，只添加了前 ${remaining} 张`);
+			}
+
+			updateImagePreview();
+			fileInput.value = ''; // 重置 input
+		});
+
+		// 触发文件选择
+		function triggerFileSelect() {
+			fileInput.click();
+		}
+
+		// 移除图片
+		function removeImage(index) {
+			URL.revokeObjectURL(selectedImages[index].url);
+			selectedImages.splice(index, 1);
+			updateImagePreview();
+		}
+		window.removeImage = removeImage;
+		window.triggerFileSelect = triggerFileSelect;
+
+		// 更新预览网格
+		function updateImagePreview() {
+			const count = selectedImages.length;
+
+			// 清空网格和添加按钮
+			imagePreviewGrid.innerHTML = '';
+			const oldAddBtn = document.getElementById('addImageBtn');
+			if (oldAddBtn) oldAddBtn.remove();
+
+			// 更新列数类名
+			imagePreviewGrid.className = 'image-preview-grid';
+			if (count === 0) {
+				imageCount.textContent = '';
+				// 显示添加按钮
+				const addBtn = document.createElement('div');
+				addBtn.id = 'addImageBtn';
+				addBtn.className = 'add-image-btn';
+				addBtn.onclick = triggerFileSelect;
+				addBtn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>`;
+				imagePreviewGrid.parentNode.insertBefore(addBtn, imageCount);
+				return;
+			}
+			if (count === 1) imagePreviewGrid.classList.add('cols-1');
+			else if (count === 2) imagePreviewGrid.classList.add('cols-2');
+			else if (count === 3) imagePreviewGrid.classList.add('cols-3');
+			else if (count === 4) imagePreviewGrid.classList.add('cols-4');
+			else if (count <= 6) imagePreviewGrid.classList.add('cols-6');
+			else if (count <= 9) imagePreviewGrid.classList.add('cols-9');
+
+			// 添加预览项
+			selectedImages.forEach((img, index) => {
+				const item = document.createElement('div');
+				item.className = 'preview-item';
+				item.innerHTML = `
+					<img src="${img.url}" alt="预览">
+					<button class="remove-btn" onclick="removeImage(${index})">&times;</button>
+				`;
+				imagePreviewGrid.appendChild(item);
+			});
+
+			// 添加 + 按钮（网格下方）
+			if (count < 9) {
+				const addBtn = document.createElement('div');
+				addBtn.id = 'addImageBtn';
+				addBtn.className = 'add-image-btn';
+				addBtn.onclick = triggerFileSelect;
+				addBtn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>`;
+				imagePreviewGrid.parentNode.insertBefore(addBtn, imageCount);
+			}
+
+			// 更新数量指示器
+			imageCount.textContent = `${count}/9`;
+		}
+
+		// Close modal when clicking outside
+		window.addEventListener('click', function(event) {
+			if (event.target == composeModal) {
+				closeModal();
+			}
+		});
+
+		window.addEventListener('keydown', function(event) {
+			if (event.key === 'Escape') {
+				closeModal();
+			}
+		});
+
+		// pica 实例（懒加载）
+		let picaInstance = null;
+
+		// 加载 pica 库（使用 unpkg 更稳定）
+		async function loadPica() {
+			if (!picaInstance) {
+				try {
+					const module = await import('https://unpkg.com/pica@8.0.0/dist/pica.min.js');
+					picaInstance = module.default ? module.default() : pica();
+				} catch (e) {
+					console.error('Failed to load pica:', e);
+					throw e;
+				}
+			}
+			return picaInstance;
+		}
+
+		// 压缩图片到目标大小（迭代压缩，确保接近目标）
+		async function compressImage(file, targetSize = 100 * 1024) {
+			// 如果已经小于目标大小，直接返回
+			if (file.size <= targetSize) {
+				return file;
+			}
+
+			const img = new Image();
+			img.src = URL.createObjectURL(file);
+			await new Promise((resolve) => { img.onload = resolve; });
+
+			// 初始压缩比例
+			let ratio = Math.sqrt(targetSize / file.size) * 0.7;
+			let width = Math.round(img.width * ratio);
+			let height = Math.round(img.height * ratio);
+			if (width < 640) {
+				width = 640;
+				height = Math.round(img.height * (640 / img.width));
+			}
+
+			// 加载 pica
+			let usePica = true, p = null;
+			try { p = await loadPica(); } catch (e) { usePica = false; }
+
+			const compress = async () => {
+				const canvas = document.createElement('canvas');
+				canvas.width = width;
+				canvas.height = height;
+				if (usePica && p) {
+					try {
+						await p.resize(img, canvas, { quality: 3, alpha: true, unsharpAmount: 80, unsharpRadius: 0.6, unsharpThreshold: 2 });
+					} catch (e) {
+						canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+					}
+				} else {
+					canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+				}
+				for (const type of ['image/avif', 'image/webp', 'image/jpeg']) {
+					const blob = await new Promise(resolve => canvas.toBlob(resolve, type, 0.85));
+					if (blob) return blob;
+				}
+				return null;
+			};
+
+			// 第一轮
+			let blob = await compress();
+
+			// 根据实际压缩比估算理想尺寸，再压一轮
+			if (blob && blob.size > targetSize) {
+				const scale = Math.sqrt(targetSize / blob.size);
+				width = Math.round(width * scale);
+				height = Math.round(height * scale);
+				blob = await compress();
+			}
+
+			URL.revokeObjectURL(img.src);
+			return blob || file;
+		}
+
+		// Post button handler
+		btnPost.addEventListener('click', async function() {
+			const text = inputTweet.value.trim();
+
+			if (!getCookie(document.cookie, 'logged_in')) {
+				location.href = getOAuthUrl();
+				return;
+			}
+
+			if (selectedImages.length === 0 && !text) {
+				inputTweet.placeholder = 'Type something here!';
+				return;
+			}
+
+			btnPost.innerText = '发送中...';
+			btnPost.disabled = true;
+
+			try {
+				const formData = new FormData();
+				formData.append('repo', REPO);
+				formData.append('message', text);
+
+				// 浏览器压缩图片
+				if (selectedImages.length > 0) {
+					btnPost.innerText = '压缩图片中...';
+					for (let i = 0; i < selectedImages.length; i++) {
+						btnPost.innerText = `压缩图片 ${i+1}/${selectedImages.length}...`;
+						const compressed = await compressImage(selectedImages[i].file);
+						// 更新扩展名以匹配实际格式
+						let fname = selectedImages[i].filename;
+						if (compressed.type && compressed.type !== selectedImages[i].file.type) {
+							const ext = compressed.type.split('/')[1];
+							fname = fname.replace(/\.[^.]+$/, '.' + ext);
+						}
+						formData.append('images', compressed, fname);
+					}
+				}
+
+				btnPost.innerText = '发送中...';
+				const r1 = await fetch('/.new_post', {
+					method: 'POST',
+					credentials: 'include',
+					body: formData
+				});
+
+				const result = await r1.json();
+				if (result.error) {
+					throw new Error(result.error);
+				}
+
+				closeModal();
+				// 清理预览
+				selectedImages.forEach(img => URL.revokeObjectURL(img.url));
+				selectedImages = [];
+				updateImagePreview();
+
+				// 重置并重新加载
+				displayedPages = [];
+				loadedBuffer = [];
+				currentPage = 0;
+				loadPage(0);
+			} catch (e) {
+				alert('发送失败: ' + e.message);
+			} finally {
+				btnPost.innerText = '发送';
+				btnPost.disabled = false;
+			}
+		});
+
+		// 拖拽上传支持
+		const modalContent = document.querySelector('.modal-content');
+
+		modalContent.addEventListener('dragover', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			modalContent.style.borderColor = '#174b73';
+		});
+
+		modalContent.addEventListener('dragleave', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			modalContent.style.borderColor = '';
+		});
+
+		modalContent.addEventListener('drop', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			modalContent.style.borderColor = '';
+
+			const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+			if (files.length > 0) {
+				// 调用图片添加函数
+				files.forEach(file => {
+					if (selectedImages.length >= 9) return;
+					if (!file.type.startsWith('image/')) return;
+					if (file.size > 5 * 1024 * 1024) {
+						alert(`${file.name} 超过 5MB 限制`);
+						return;
+					}
+
+					const url = URL.createObjectURL(file);
+					const filename = generateFilename(file);
+					selectedImages.push({ file, url, filename });
+				});
+				updateImagePreview();
+			}
+		});
+
+		// Initialize
+		document.addEventListener('DOMContentLoaded', function() {
+			parseUrl();
+			loadOwnerInfo();
+			loadPage(0);
+			updateImagePreview(); // 初始化图片上传按钮
+		});
+	</script>
+</body>
+</html>
