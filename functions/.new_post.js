@@ -165,6 +165,7 @@ async function handler(request, env) {
     }
 
     const access_token = getCookie(request.headers.get('cookie'), 'access_token');
+    const auth = access_token ? { 'Authorization': `Bearer ${access_token}` } : {};
 
     let blobResults = [];
     if (processedImages.length > 0) {
@@ -173,12 +174,12 @@ async function handler(request, env) {
     }
 
     const API_BASE = `https://api.github.com/repos/${repo}`;
-    const r1 = await fetch_json(`${API_BASE}/commits?per_page=1`);
+    const r1 = await fetch_json(`${API_BASE}/commits?per_page=1`, { headers: auth });
     const last_sha = r1?.[0]?.sha;
     const last_tree = r1?.[0]?.commit?.tree?.sha;
     if (!last_sha || !last_tree) return Response.json({error: 'no last commit', rsp: r1}, {status: 400});
 
-    const r2 = await fetch_json(`${API_BASE}/commits/${last_sha}/branches-where-head`);
+    const r2 = await fetch_json(`${API_BASE}/commits/${last_sha}/branches-where-head`, { headers: auth });
     const branch = r2?.[0]?.name;
     if (!branch) return Response.json({error: 'no branch', rsp: r2}, {status: 400});
 
