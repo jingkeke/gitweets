@@ -949,7 +949,7 @@
 			const m = /^\/(\w+)(?:\/([0-9a-fA-F]{7,40}))?$/.exec(location.pathname);
 			if (m) {
 				// This is a user/commit view, use default repo
-				REPO = 'est/gitweets';
+				REPO = 'jingkeke/gitweets';
 			} else {
 				// Check URL params
 				const urlParams = new URLSearchParams(window.location.search);
@@ -957,7 +957,7 @@
 				if (repo) {
 					REPO = repo;
 				} else {
-					REPO = 'est/gitweets';
+					REPO = 'jingkeke/gitweets';
 				}
 			}
 			API_BASE = `https://api.github.com/repos/${REPO}`;

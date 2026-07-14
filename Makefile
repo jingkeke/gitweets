@@ -29,9 +29,10 @@ help:
 
 # 发文本
 post:
-	@test -n '$(p)' || { echo "用法: make post '内容'"; exit 1; }
-	git add static -A 2>/dev/null || true
-	git commit --allow-empty -m '$(p)'
+	@msg="$(filter-out $@,$(MAKECMDGOALS))"; \
+	test -n "$$msg" || { echo "用法: make post '内容'"; exit 1; }; \
+	git add static -A 2>/dev/null || true; \
+	git commit --allow-empty -m "$$msg"
 	@echo "✓ 已发布"
 
 # 发图片
@@ -116,8 +117,9 @@ push:
 
 # cherry-pick
 repost:
-	@test -n '$(p)' || { echo "用法: make repost SHA"; exit 1; }
-	git cherry-pick $(p)
+	@sha="$(filter-out $@,$(MAKECMDGOALS))"; \
+	test -n "$$sha" || { echo "用法: make repost SHA"; exit 1; }; \
+	git cherry-pick $$sha
 
 # 把多余参数当目标时不报错 (用于 post-img 的文件列表)
 %:
