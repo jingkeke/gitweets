@@ -117,3 +117,37 @@ export async function writeNoteToGitHub(repoPath, token, { targetSha, ndjson, no
   });
   if (!refR.ok) throw new Error(`update ref: ${refR.status} ${await refR.text().catch(() => '')}`);
 }
+
+export async function createInitialNotesCommit(repoPath, token) {
+  const [owner, repo] = repoPath.split('/');
+  const API = `https://api.github.com/repos/${owner}/${repo}`;
+  const auth = { 'Authorization': `Bearer ${token}`, 'User-Agent': 'gitweets/1.0' };
+
+  // 1. create empty tree
+  const treeR = await fetch(`${API}/git/trees`, {
+    method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tree: [] }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!treeR.ok) throw new Error(`create tree: ${treeR.status}`);
+  const treeSha = (await treeR.json()).sha;
+
+  // 2. create initial commit
+  const commitR = await fetch(`${API}/git/commits`, {
+    method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: 'init notes', tree: treeSha, parents: [] }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!commitR.ok) throw new Error(`create commit: ${commitR.status}`);
+  const commitSha = (await commitR.json()).sha;
+
+  // 3. create refs/notes/commits
+  const refR = await fetch(`${API}/git/refs`, {
+    method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ref: 'refs/notes/commits', sha: commitSha }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!refR.ok) throw new Error(`create ref: ${refR.status} ${await refR.text().catch(() => '')}`);
+
+  return commitSha;
+}

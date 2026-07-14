@@ -2,7 +2,7 @@
 // GET  /:cmts?repo=owner/name&shas=abc,def,... → 批量读取评论
 // POST /:cmts?id=xxx                          → 添加评论（NDJSON 写入 git notes）
 
-import { fetchNotesFromGitHub, parseAllNotes, parseNote, getExistingNdjson, writeNoteToGitHub, CACHE_KEY } from './_notes.mjs';
+import { fetchNotesFromGitHub, parseAllNotes, parseNote, getExistingNdjson, writeNoteToGitHub, createInitialNotesCommit, CACHE_KEY } from './_notes.mjs';
 
 function getRepo(url, env) {
   return url.searchParams.get('repo') || env.REPO || 'est/gitweets';
@@ -78,8 +78,14 @@ export async function handler(request, env) {
       try { ghData = await fetchNotesFromGitHub(repo, env.GITHUB_TOKEN); allNotes = parseAllNotes(ghData); }
       catch (e) { return Response.json({ error: 'Failed to read notes' }, { status: 502 }); }
 
-      const notesCommitSha = allNotes._commitSha;
-      if (!notesCommitSha) return Response.json({ error: 'No notes commit found' }, { status: 500 });
+      let notesCommitSha = allNotes._commitSha;
+      if (!notesCommitSha) {
+        try {
+          notesCommitSha = await createInitialNotesCommit(repo, env.GITHUB_TOKEN);
+        } catch (e) {
+          return Response.json({ error: 'Failed to create notes ref: ' + e.message }, { status: 502 });
+        }
+      }
 
       const fullSha = Object.keys(allNotes).find(k => k.startsWith(sha));
       const existingNdjson = getExistingNdjson(ghData, fullSha);

@@ -1707,7 +1707,11 @@ The default and minimal required scope is public_repo
 				canvas.width = width;
 				canvas.height = height;
 				if (usePica && p) {
-					await p.resize(img, canvas, { quality: 3, alpha: true, unsharpAmount: 80, unsharpRadius: 0.6, unsharpThreshold: 2 });
+					try {
+						await p.resize(img, canvas, { quality: 3, alpha: true, unsharpAmount: 80, unsharpRadius: 0.6, unsharpThreshold: 2 });
+					} catch (e) {
+						canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+					}
 				} else {
 					canvas.getContext('2d').drawImage(img, 0, 0, width, height);
 				}
